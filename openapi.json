@@ -2,27 +2,50 @@
   "openapi": "3.0.1",
   "info": {
     "title": "StudentCouncil.Web",
-    "version": "1.0"
+    "version": "1.0",
+    "description": "API студенческого совета: пользователи, мероприятия, бейджи, аутентификация и 2FA."
   },
+  "servers": [
+    {
+      "url": "/"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Аутентификация, выход, текущий пользователь и двухфакторная аутентификация"
+    },
+    {
+      "name": "Badge",
+      "description": "Бейджи участников и файлы бейджей"
+    },
+    {
+      "name": "Event",
+      "description": "Мероприятия и фотографии мероприятий"
+    },
+    {
+      "name": "User",
+      "description": "Пользователи, аватары и сброс пароля"
+    }
+  ],
+  "security": [
+    {
+      "cookieAuth": []
+    }
+  ],
   "paths": {
     "/api/account/login": {
       "post": {
         "tags": [
           "Account"
         ],
+        "summary": "Вход в систему",
+        "description": "Проверяет email и пароль. Если 2FA не настроена — возвращает 402 и данные для настройки. Если 2FA включена — возвращает 403 с требованием кода.",
+        "security": [],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/LoginRequestDTO"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/LoginRequestDTO"
-              }
-            },
-            "application/*+json": {
               "schema": {
                 "$ref": "#/components/schemas/LoginRequestDTO"
               }
@@ -31,7 +54,45 @@
         },
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Успешный вход",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponseDTO"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "description": "Требуется настройка 2FA",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TwoFactorSetupResponseDTO"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Требуется код 2FA",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requiresTwoFactorCode": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -41,9 +102,18 @@
         "tags": [
           "Account"
         ],
+        "summary": "Выход из системы",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
         "responses": {
           "200": {
-            "description": "OK"
+            "$ref": "#/components/responses/OkMessage"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
           }
         }
       }
@@ -53,9 +123,15 @@
         "tags": [
           "Account"
         ],
+        "summary": "Получить текущего пользователя",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "Текущий пользователь",
             "content": {
               "application/json": {
                 "schema": {
@@ -63,6 +139,9 @@
                 }
               }
             }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
           }
         }
       }
@@ -72,19 +151,12 @@
         "tags": [
           "Account"
         ],
+        "summary": "Подтвердить и включить 2FA",
+        "security": [],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TwoFactorSetupConfirmDTO"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TwoFactorSetupConfirmDTO"
-              }
-            },
-            "application/*+json": {
               "schema": {
                 "$ref": "#/components/schemas/TwoFactorSetupConfirmDTO"
               }
@@ -93,7 +165,20 @@
         },
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "2FA включена, пользователь авторизован",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponseDTO"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
           }
         }
       }
@@ -103,19 +188,12 @@
         "tags": [
           "Account"
         ],
+        "summary": "Вход по коду 2FA",
+        "security": [],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TwoFactorConfirmDTO"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TwoFactorConfirmDTO"
-              }
-            },
-            "application/*+json": {
               "schema": {
                 "$ref": "#/components/schemas/TwoFactorConfirmDTO"
               }
@@ -124,7 +202,20 @@
         },
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Успешный вход по 2FA",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponseDTO"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
           }
         }
       }
@@ -134,6 +225,12 @@
         "tags": [
           "Account"
         ],
+        "summary": "Сбросить 2FA пользователя",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "userId",
@@ -147,7 +244,19 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "2FA сброшена"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           }
         }
       }
@@ -157,6 +266,12 @@
         "tags": [
           "Badge"
         ],
+        "summary": "Получить бейджи пользователя",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "userId",
@@ -170,7 +285,23 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Список бейджей пользователя",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadgeListResponseDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
           }
         }
       }
@@ -179,6 +310,12 @@
       "get": {
         "tags": [
           "Badge"
+        ],
+        "summary": "Получить бейджи мероприятия",
+        "security": [
+          {
+            "cookieAuth": []
+          }
         ],
         "parameters": [
           {
@@ -193,7 +330,26 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Список бейджей мероприятия",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadgeListResponseDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
           }
         }
       }
@@ -203,6 +359,12 @@
         "tags": [
           "Badge"
         ],
+        "summary": "Получить бейдж по ID",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "id",
@@ -216,13 +378,38 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Бейдж",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadgeResponseDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
           }
         }
       },
       "put": {
         "tags": [
           "Badge"
+        ],
+        "summary": "Обновить бейдж",
+        "security": [
+          {
+            "cookieAuth": []
+          }
         ],
         "parameters": [
           {
@@ -236,18 +423,9 @@
           }
         ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateBadgeDTO"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateBadgeDTO"
-              }
-            },
-            "application/*+json": {
               "schema": {
                 "$ref": "#/components/schemas/UpdateBadgeDTO"
               }
@@ -256,13 +434,34 @@
         },
         "responses": {
           "200": {
-            "description": "OK"
+            "$ref": "#/components/responses/OkMessage"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
           }
         }
       },
       "delete": {
         "tags": [
           "Badge"
+        ],
+        "summary": "Удалить бейдж",
+        "security": [
+          {
+            "cookieAuth": []
+          }
         ],
         "parameters": [
           {
@@ -277,7 +476,19 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "$ref": "#/components/responses/OkMessage"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
           }
         }
       }
@@ -287,49 +498,63 @@
         "tags": [
           "Badge"
         ],
+        "summary": "Создать бейдж",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "multipart/form-data": {
               "schema": {
                 "type": "object",
                 "properties": {
-                  "UserId": {
+                  "userId": {
                     "type": "integer",
                     "format": "int32"
                   },
-                  "EventId": {
+                  "eventId": {
                     "type": "integer",
                     "format": "int32"
                   },
-                  "Role": {
-                    "type": "string"
+                  "role": {
+                    "type": "string",
+                    "nullable": true
                   },
                   "file": {
                     "type": "string",
-                    "format": "binary"
+                    "format": "binary",
+                    "nullable": true
                   }
-                }
-              },
-              "encoding": {
-                "UserId": {
-                  "style": "form"
                 },
-                "EventId": {
-                  "style": "form"
-                },
-                "Role": {
-                  "style": "form"
-                },
-                "file": {
-                  "style": "form"
-                }
+                "required": [
+                  "userId",
+                  "eventId"
+                ]
               }
             }
           }
         },
         "responses": {
-          "200": {
-            "description": "OK"
+          "201": {
+            "$ref": "#/components/responses/CreatedMessage"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
           }
         }
       }
@@ -339,6 +564,12 @@
         "tags": [
           "Badge"
         ],
+        "summary": "Скачать файл бейджа",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "id",
@@ -352,13 +583,45 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "PDF-файл бейджа",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
           }
         }
       },
       "post": {
         "tags": [
           "Badge"
+        ],
+        "summary": "Загрузить или заменить файл бейджа",
+        "security": [
+          {
+            "cookieAuth": []
+          }
         ],
         "parameters": [
           {
@@ -372,6 +635,7 @@
           }
         ],
         "requestBody": {
+          "required": true,
           "content": {
             "multipart/form-data": {
               "schema": {
@@ -381,25 +645,44 @@
                     "type": "string",
                     "format": "binary"
                   }
-                }
-              },
-              "encoding": {
-                "file": {
-                  "style": "form"
-                }
+                },
+                "required": [
+                  "file"
+                ]
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "OK"
+            "$ref": "#/components/responses/OkMessage"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
           }
         }
       },
       "delete": {
         "tags": [
           "Badge"
+        ],
+        "summary": "Удалить файл бейджа",
+        "security": [
+          {
+            "cookieAuth": []
+          }
         ],
         "parameters": [
           {
@@ -414,7 +697,22 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "$ref": "#/components/responses/OkMessage"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
           }
         }
       }
@@ -424,9 +722,31 @@
         "tags": [
           "Event"
         ],
+        "summary": "Получить список мероприятий",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Список мероприятий",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventListResponseDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
           }
         }
       },
@@ -434,19 +754,16 @@
         "tags": [
           "Event"
         ],
+        "summary": "Создать мероприятие",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateEventDTO"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateEventDTO"
-              }
-            },
-            "application/*+json": {
               "schema": {
                 "$ref": "#/components/schemas/CreateEventDTO"
               }
@@ -455,7 +772,29 @@
         },
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Созданное мероприятие",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventResponseDTO"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
           }
         }
       }
@@ -465,6 +804,12 @@
         "tags": [
           "Event"
         ],
+        "summary": "Получить мероприятие по ID",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "id",
@@ -478,13 +823,38 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Мероприятие",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventResponseDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
           }
         }
       },
       "put": {
         "tags": [
           "Event"
+        ],
+        "summary": "Обновить мероприятие",
+        "security": [
+          {
+            "cookieAuth": []
+          }
         ],
         "parameters": [
           {
@@ -498,18 +868,9 @@
           }
         ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateEventDTO"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateEventDTO"
-              }
-            },
-            "application/*+json": {
               "schema": {
                 "$ref": "#/components/schemas/UpdateEventDTO"
               }
@@ -518,13 +879,34 @@
         },
         "responses": {
           "200": {
-            "description": "OK"
+            "$ref": "#/components/responses/OkMessage"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
           }
         }
       },
       "delete": {
         "tags": [
           "Event"
+        ],
+        "summary": "Удалить мероприятие",
+        "security": [
+          {
+            "cookieAuth": []
+          }
         ],
         "parameters": [
           {
@@ -539,7 +921,19 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "$ref": "#/components/responses/OkMessage"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
           }
         }
       }
@@ -549,6 +943,12 @@
         "tags": [
           "Event"
         ],
+        "summary": "Загрузить или заменить фото мероприятия",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "id",
@@ -561,6 +961,7 @@
           }
         ],
         "requestBody": {
+          "required": true,
           "content": {
             "multipart/form-data": {
               "schema": {
@@ -570,25 +971,44 @@
                     "type": "string",
                     "format": "binary"
                   }
-                }
-              },
-              "encoding": {
-                "photo": {
-                  "style": "form"
-                }
+                },
+                "required": [
+                  "photo"
+                ]
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "OK"
+            "$ref": "#/components/responses/OkMessage"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
           }
         }
       },
       "delete": {
         "tags": [
           "Event"
+        ],
+        "summary": "Удалить фото мероприятия",
+        "security": [
+          {
+            "cookieAuth": []
+          }
         ],
         "parameters": [
           {
@@ -603,7 +1023,19 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "$ref": "#/components/responses/OkMessage"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
           }
         }
       }
@@ -613,9 +1045,31 @@
         "tags": [
           "User"
         ],
+        "summary": "Получить список пользователей",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Список пользователей",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserListResponseDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
           }
         }
       },
@@ -623,19 +1077,16 @@
         "tags": [
           "User"
         ],
+        "summary": "Создать пользователя",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateUserDTO"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateUserDTO"
-              }
-            },
-            "application/*+json": {
               "schema": {
                 "$ref": "#/components/schemas/CreateUserDTO"
               }
@@ -643,8 +1094,23 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "OK"
+          "201": {
+            "$ref": "#/components/responses/CreatedMessage"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
           }
         }
       }
@@ -654,6 +1120,12 @@
         "tags": [
           "User"
         ],
+        "summary": "Получить пользователя по ID",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "id",
@@ -667,13 +1139,38 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Пользователь",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
           }
         }
       },
       "put": {
         "tags": [
           "User"
+        ],
+        "summary": "Обновить пользователя",
+        "security": [
+          {
+            "cookieAuth": []
+          }
         ],
         "parameters": [
           {
@@ -687,18 +1184,9 @@
           }
         ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateUserDTO"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateUserDTO"
-              }
-            },
-            "application/*+json": {
               "schema": {
                 "$ref": "#/components/schemas/UpdateUserDTO"
               }
@@ -707,13 +1195,37 @@
         },
         "responses": {
           "200": {
-            "description": "OK"
+            "$ref": "#/components/responses/OkMessage"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
           }
         }
       },
       "delete": {
         "tags": [
           "User"
+        ],
+        "summary": "Удалить пользователя",
+        "security": [
+          {
+            "cookieAuth": []
+          }
         ],
         "parameters": [
           {
@@ -728,7 +1240,22 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "$ref": "#/components/responses/OkMessage"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
           }
         }
       }
@@ -738,6 +1265,12 @@
         "tags": [
           "User"
         ],
+        "summary": "Загрузить или заменить аватар",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "id",
@@ -750,6 +1283,7 @@
           }
         ],
         "requestBody": {
+          "required": true,
           "content": {
             "multipart/form-data": {
               "schema": {
@@ -759,25 +1293,44 @@
                     "type": "string",
                     "format": "binary"
                   }
-                }
-              },
-              "encoding": {
-                "avatar": {
-                  "style": "form"
-                }
+                },
+                "required": [
+                  "avatar"
+                ]
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "OK"
+            "$ref": "#/components/responses/OkMessage"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
           }
         }
       },
       "delete": {
         "tags": [
           "User"
+        ],
+        "summary": "Удалить аватар",
+        "security": [
+          {
+            "cookieAuth": []
+          }
         ],
         "parameters": [
           {
@@ -792,7 +1345,19 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "$ref": "#/components/responses/OkMessage"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
           }
         }
       }
@@ -801,6 +1366,12 @@
       "post": {
         "tags": [
           "User"
+        ],
+        "summary": "Сбросить пароль пользователя",
+        "security": [
+          {
+            "cookieAuth": []
+          }
         ],
         "parameters": [
           {
@@ -814,18 +1385,9 @@
           }
         ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ResetPasswordDTO"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ResetPasswordDTO"
-              }
-            },
-            "application/*+json": {
               "schema": {
                 "$ref": "#/components/schemas/ResetPasswordDTO"
               }
@@ -834,53 +1396,251 @@
         },
         "responses": {
           "200": {
-            "description": "OK"
+            "$ref": "#/components/responses/OkMessage"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
           }
         }
       }
     }
   },
   "components": {
+    "securitySchemes": {
+      "cookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": ".AspNetCore.Identity.Application",
+        "description": "Аутентификация через cookie ASP.NET Core Identity"
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Некорректный запрос",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Пользователь не авторизован",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "Недостаточно прав",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Ресурс не найден",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "Conflict": {
+        "description": "Конфликт данных",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "InternalServerError": {
+        "description": "Внутренняя ошибка сервера",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "OkMessage": {
+        "description": "Успешная операция",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/MessageResponse"
+            }
+          }
+        }
+      },
+      "CreatedMessage": {
+        "description": "Ресурс создан",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/MessageResponse"
+            }
+          }
+        }
+      }
+    },
     "schemas": {
-      "CreateEventDTO": {
+      "ErrorResponse": {
         "type": "object",
         "properties": {
-          "title": {
+          "error": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "MessageResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "LoginRequestDTO": {
+        "required": [
+          "email",
+          "password"
+        ],
+        "type": "object",
+        "properties": {
+          "email": {
             "type": "string",
             "nullable": true
           },
-          "description": {
+          "password": {
             "type": "string",
             "nullable": true
-          },
-          "budget": {
-            "type": "number",
-            "format": "double",
-            "nullable": true
-          },
-          "eventDate": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "location": {
-            "type": "string",
-            "nullable": true
-          },
-          "registeredParticipants": {
+          }
+        },
+        "additionalProperties": false
+      },
+      "LoginResponseDTO": {
+        "type": "object",
+        "properties": {
+          "id": {
             "type": "integer",
             "format": "int32"
           },
-          "actualParticipants": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "registrationLink": {
+          "firstName": {
             "type": "string",
             "nullable": true
           },
-          "responsibleUserId": {
+          "lastName": {
+            "type": "string",
+            "nullable": true
+          },
+          "role": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "TwoFactorSetupResponseDTO": {
+        "type": "object",
+        "properties": {
+          "sharedKey": {
+            "type": "string",
+            "nullable": true
+          },
+          "authenticatorUri": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "TwoFactorSetupConfirmDTO": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "code": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "TwoFactorConfirmDTO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "nullable": true
+          },
+          "rememberDevice": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CurrentUserDTO": {
+        "required": [
+          "email",
+          "role"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
             "type": "integer",
             "format": "int32"
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "firstName": {
+            "type": "string",
+            "nullable": true
+          },
+          "lastName": {
+            "type": "string",
+            "nullable": true
+          },
+          "role": {
+            "type": "string",
+            "nullable": true
+          },
+          "avatarPath": {
+            "type": "string",
+            "nullable": true
+          },
+          "isActive": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -932,162 +1692,6 @@
             "type": "string",
             "format": "date-time",
             "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
-      "CurrentUserDTO": {
-        "required": [
-          "email",
-          "role"
-        ],
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "email": {
-            "type": "string",
-            "nullable": true
-          },
-          "firstName": {
-            "type": "string",
-            "nullable": true
-          },
-          "lastName": {
-            "type": "string",
-            "nullable": true
-          },
-          "role": {
-            "type": "string",
-            "nullable": true
-          },
-          "avatarPath": {
-            "type": "string",
-            "nullable": true
-          },
-          "isActive": {
-            "type": "boolean"
-          }
-        },
-        "additionalProperties": false
-      },
-      "EventStatus": {
-        "enum": [
-          "Upcoming",
-          "Completed",
-          "Cancelled"
-        ],
-        "type": "string"
-      },
-      "LoginRequestDTO": {
-        "required": [
-          "email",
-          "password"
-        ],
-        "type": "object",
-        "properties": {
-          "email": {
-            "type": "string",
-            "nullable": true
-          },
-          "password": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
-      "ResetPasswordDTO": {
-        "type": "object",
-        "properties": {
-          "newPassword": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
-      "TwoFactorConfirmDTO": {
-        "type": "object",
-        "properties": {
-          "code": {
-            "type": "string",
-            "nullable": true
-          },
-          "rememberDevice": {
-            "type": "boolean"
-          }
-        },
-        "additionalProperties": false
-      },
-      "TwoFactorSetupConfirmDTO": {
-        "type": "object",
-        "properties": {
-          "email": {
-            "type": "string",
-            "nullable": true
-          },
-          "code": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
-      "UpdateBadgeDTO": {
-        "type": "object",
-        "properties": {
-          "role": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
-      "UpdateEventDTO": {
-        "type": "object",
-        "properties": {
-          "title": {
-            "type": "string",
-            "nullable": true
-          },
-          "description": {
-            "type": "string",
-            "nullable": true
-          },
-          "budget": {
-            "type": "number",
-            "format": "double",
-            "nullable": true
-          },
-          "eventDate": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "location": {
-            "type": "string",
-            "nullable": true
-          },
-          "registeredParticipants": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "actualParticipants": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "registrationLink": {
-            "type": "string",
-            "nullable": true
-          },
-          "responsibleUserId": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "status": {
-            "$ref": "#/components/schemas/EventStatus"
           }
         },
         "additionalProperties": false
@@ -1148,6 +1752,343 @@
             "type": "boolean"
           },
           "role": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "UserDTO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "firstName": {
+            "type": "string",
+            "nullable": true
+          },
+          "lastName": {
+            "type": "string",
+            "nullable": true
+          },
+          "patronymic": {
+            "type": "string",
+            "nullable": true
+          },
+          "group": {
+            "type": "string",
+            "nullable": true
+          },
+          "phoneNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "telegram": {
+            "type": "string",
+            "nullable": true
+          },
+          "role": {
+            "type": "string",
+            "nullable": true
+          },
+          "avatarPath": {
+            "type": "string",
+            "nullable": true
+          },
+          "clothingSize": {
+            "type": "string",
+            "nullable": true
+          },
+          "birthDate": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "joinedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "balance": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "experiencePoints": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "UserListResponseDTO": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "users": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserDTO"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateEventDTO": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "budget": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "eventDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "location": {
+            "type": "string",
+            "nullable": true
+          },
+          "registeredParticipants": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "actualParticipants": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "registrationLink": {
+            "type": "string",
+            "nullable": true
+          },
+          "responsibleUserId": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateEventDTO": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "budget": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "eventDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "location": {
+            "type": "string",
+            "nullable": true
+          },
+          "registeredParticipants": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "actualParticipants": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "registrationLink": {
+            "type": "string",
+            "nullable": true
+          },
+          "responsibleUserId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "status": {
+            "$ref": "#/components/schemas/EventStatus"
+          }
+        },
+        "additionalProperties": false
+      },
+      "EventStatus": {
+        "enum": [
+          "Upcoming",
+          "Completed",
+          "Cancelled"
+        ],
+        "type": "string"
+      },
+      "EventResponseDTO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "budget": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "eventDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "location": {
+            "type": "string",
+            "nullable": true
+          },
+          "registeredParticipants": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "actualParticipants": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "registrationLink": {
+            "type": "string",
+            "nullable": true
+          },
+          "responsibleUserId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "status": {
+            "$ref": "#/components/schemas/EventStatus"
+          },
+          "photoPath": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "EventListResponseDTO": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventResponseDTO"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateBadgeDTO": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "eventId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "role": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateBadgeDTO": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "BadgeResponseDTO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "eventId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "role": {
+            "type": "string",
+            "nullable": true
+          },
+          "filePath": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "BadgeListResponseDTO": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "badges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BadgeResponseDTO"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "ResetPasswordDTO": {
+        "type": "object",
+        "properties": {
+          "newPassword": {
             "type": "string",
             "nullable": true
           }
